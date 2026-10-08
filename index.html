@@ -9,6 +9,8 @@ window.BV_VOICE = {"안드로메다자리 공주를 본뜬 별자리예요.": "d
 </script>
 <style>
 :root{
+  /* 안전영역: 기본은 env(), iframe 안에선 부모(사랑이네 맛집)가 실측값으로 덮어씀 */
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); --sal:0px;
   --bg:#0a0e23; --bg2:#141a3a; --card:rgba(6,8,18,.74);
   --ink:#eaf0ff; --sub:#9fb0e6; --line:#2b356e;
   --yellow:#ffd34d; --pink:#ff7ec2; --blue:#7bc4ff; --good:#7bffb0;
@@ -45,7 +47,7 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 #cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#05060f}
 #skyCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 #topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:8px;align-items:center;
-  padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;z-index:5;
+  padding:calc(var(--sat) + 8px) 10px 8px;padding-left:calc(10px + var(--sal));z-index:5;
   background:linear-gradient(180deg,rgba(5,7,20,.75),transparent)}
 .chip{background:rgba(10,14,35,.72);border:1px solid var(--line);border-radius:999px;
   padding:7px 12px;font-size:13px;font-weight:700;color:var(--ink);display:flex;gap:6px;align-items:center}
@@ -58,7 +60,7 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 
 /* bottom card */
 #card{position:absolute;left:0;right:0;bottom:0;z-index:6;
-  padding:14px 14px calc(env(safe-area-inset-bottom) + 14px);
+  padding:14px 14px calc(var(--sab) + 14px);
   display:flex;flex-direction:column;align-items:center}
 #card .inner{width:100%;max-width:460px;background:var(--card);
   border:1px solid var(--line);border-radius:22px;padding:14px 16px;
@@ -118,7 +120,7 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
   100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 
 /* permission / sim banner */
-.banner{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 56px);transform:translateX(-50%);
+.banner{position:absolute;left:50%;top:calc(var(--sat) + 56px);transform:translateX(-50%);
   z-index:7;background:rgba(10,14,35,.92);border:1px solid var(--line);border-radius:14px;
   padding:10px 14px;font-size:13px;color:var(--sub);max-width:92%;text-align:center;line-height:1.5}
 .banner b{color:var(--yellow)}
@@ -128,7 +130,7 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
   radial-gradient(1000px 600px at 50% -10%,#232b7a 0%,transparent 60%),var(--bg);
   justify-content:flex-start}
 #dexHead{width:100%;max-width:560px;display:flex;align-items:center;gap:10px;
-  padding:calc(env(safe-area-inset-top) + 14px) 14px 8px}
+  padding:calc(var(--sat) + 14px) 14px 8px}
 #dexHead h1{font-size:20px;margin:0;font-weight:900}
 #dexHead .back{margin-left:auto;background:#222a5e;border:1px solid var(--line);
   border-radius:12px;padding:9px 13px;font-weight:800;font-size:14px}
@@ -150,7 +152,7 @@ button{font-family:inherit;cursor:pointer;border:none;color:inherit}
 #modal{position:fixed;inset:0;z-index:20;background:rgba(4,6,18,.75);
   display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(4px)}
 #modalCard{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);
-  border-radius:24px;padding:16px 18px calc(env(safe-area-inset-bottom) + 16px);
+  border-radius:24px;padding:16px 18px calc(var(--sab) + 16px);
   max-height:88vh;overflow-y:auto}
 #modalCard canvas{width:100%;height:190px;background:
   radial-gradient(400px 200px at 50% 30%,#1a2358 0%,#0b1030 70%);border-radius:16px}
@@ -962,6 +964,22 @@ getLoc();
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', function () { setTimeout(fit, 300); });
   document.addEventListener('fullscreenchange', function () { setTimeout(fit, 100); });
+})();
+</script>
+<script>
+/* iframe(사랑이네 맛집) 안에선 env(safe-area)=0 → 부모가 실측 inset 을 postMessage 로 보냄(쑥쑥팡과 동일).
+   받은 값으로 --sat/--sab 를 덮어써 상단바·하단카드가 상태바/내비바에 안 가리게. 혼자 실행 땐 env() 사용. */
+(function () {
+  function setv(n, v) { if (v != null) document.documentElement.style.setProperty(n, Math.round(v) + 'px'); }
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (d && d.type === 'bjp-insets') { setv('--sat', d.top); setv('--sab', d.bottom); }
+  });
+  if (window.parent && window.parent !== window) {
+    document.documentElement.style.setProperty('--sal', '52px'); // cook ⬅ 뒤로가기 버튼과 안 겹치게
+    var ready = function () { try { window.parent.postMessage({ type: 'bjp-ready' }, '*'); } catch (e) {} };
+    ready(); setTimeout(ready, 400); setTimeout(ready, 1200);
+  }
 })();
 </script>
 </body>
